@@ -4,19 +4,34 @@
   become: true
   pre_tasks:
 
-  - name: install updates (Fedora)
+  - name: update repo cache (Fedora)
     tags: always
     dnf:
-      update_only: yes
       update_cache: yes
+    changed_when: false
     when: ansible_distribution == "Fedora"
 
-  - name: install updates (Ubuntu)
+  - name: update repo cache (Ubuntu)
     tags: always
     apt:
-      upgrade: dist
       update_cache: yes
+    changed_when: false
     when: ansible_distribution == "Ubuntu"
+
+
+
+- hosts: all
+  become: true
+  tasks:
+
+
+  - name: add ssh key for simone
+    tags: always
+    authorized_key:
+      user: simone
+      key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJJQ34yX3wz62hd2dKq8oR2/3H0Q6zgwg451QFsqBDAj ansible"
+
+
 
 - hosts: workstations
   become: true
@@ -25,6 +40,7 @@
   - name: install unzip
     package:
       name: unzip
+
 
   - name: install terraform
     unarchive:
@@ -60,6 +76,35 @@
       state: latest
       update_cache: yes
     when: ansible_distribution == "Fedora"
+
+
+  - name: start httpd (Fedora)
+    tags: apache,fedora,httpd
+    service:
+      name: httpd
+      state: started
+      enabled: yes
+    when: ansible_distribution == "Fedora"
+
+
+  - name: change e-mail address for admin
+    tags: apache,fedora,httpd
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^ServerAdmin'
+      line: ServerAdmin somebody@somewhere.net
+    when: ansible_distribution == "Fedora"
+    register: httpd
+
+
+
+  - name: Restart service httpd (Fedora)
+    tags: apache,centos,httpd
+    ansible.builtin.service:
+      name: httpd
+      state: restarted
+    when: httpd.changed
+
 
   - name: copy default html file for site
     tags: apache,apache2,httpd
