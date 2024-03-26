@@ -19,127 +19,27 @@
     when: ansible_distribution == "Ubuntu"
 
 
-
 - hosts: all
   become: true
-  tasks:
-
-
-  - name: add ssh key for simone
-    tags: always
-    authorized_key:
-      user: simone
-      key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJJQ34yX3wz62hd2dKq8oR2/3H0Q6zgwg451QFsqBDAj ansible"
-
-
-
+  roles:
+    - base
+      
 - hosts: workstations
   become: true
-  tasks:
-
-  - name: install unzip
-    package:
-      name: unzip
-
-
-  - name: install terraform
-    unarchive:
-      src: https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
-      dest: /usr/local/bin
-      remote_src: yes
-      mode: 0755
-      owner: root
-      group: root
-
-
+  roles:
+    - workstations
+  
 - hosts: web_servers
   become: true
-  tasks:
-
-
-  - name: install apache and php for Ubuntu
-    tags: apache,apache2,ubuntu
-    apt:
-      name:
-        - apache2
-        - libapache2-mod-php
-      state: latest
-    when: ansible_distribution == "Ubuntu"
-
-
-  - name: install apache and php packages for Fedora servers
-    tags: apache,fedora,httpd
-    dnf:
-      name:
-        - httpd
-        - php
-      state: latest
-      update_cache: yes
-    when: ansible_distribution == "Fedora"
-
-
-  - name: start httpd (Fedora)
-    tags: apache,fedora,httpd
-    service:
-      name: httpd
-      state: started
-      enabled: yes
-    when: ansible_distribution == "Fedora"
-
-
-  - name: change e-mail address for admin
-    tags: apache,fedora,httpd
-    lineinfile:
-      path: /etc/httpd/conf/httpd.conf
-      regexp: '^ServerAdmin'
-      line: ServerAdmin somebody@somewhere.net
-    when: ansible_distribution == "Fedora"
-    register: httpd
-
-
-
-  - name: Restart service httpd (Fedora)
-    tags: apache,centos,httpd
-    ansible.builtin.service:
-      name: httpd
-      state: restarted
-    when: httpd.changed
-
-
-  - name: copy default html file for site
-    tags: apache,apache2,httpd
-    copy:
-      src: default_site.html
-      dest: /var/www/html/index.html
-      owner: root
-      group: root
-      mode: 0644
+  roles:
+    - web_servers
 
 - hosts: db_servers
   become: true
-  tasks:
-
-  - name: install mariadb package (Fedora)
-    tags: fedora,db,mariadb
-    dnf:
-      name: mariadb
-      state: latest
-    when: ansible_distribution == "Fedora"
-
-  - name: install mariadb package (Ubuntu)
-    tags: db,mariadb,ubuntu
-    apt:
-      name: mariadb-server
-      state: latest
-    when: ansible_distribution == "Ubuntu"
-
+  roles:
+    - db_servers
 
 - hosts: file_servers
   become: true
-  tasks:
-
-  - name: install samb package
-    tags: samba
-    package:
-      name: samba
-      state: latest
+  roles:
+    - file_servers
